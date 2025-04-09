@@ -1,0 +1,43 @@
+// Define variables (customize these to match your theme)
+$primary-color: #007bff; // Blue for the link, adjust as needed
+$background-light: #f8f9fa; // Light gray background
+$text-color: #333; // Dark text for readability
+$border-color: #e0e0e0; // Subtle border
+$spacing-unit: 1rem; // Base spacing unit
+
+// Login prompt styling
+.login-prompt {
+  background-color: $background-light;
+  padding: $spacing-unit;
+  border: 1px solid $border-color;
+  border-radius: 5px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); // Subtle shadow for depth
+
+  p {
+    margin: 0; // Remove default margin since we control padding in the container
+    font-size: 1rem;
+    color: $text-color;
+    line-height: 1.5;
+
+    .login-link {
+      color: $primary-color;
+      font-weight: 600; // Slightly bold for emphasis
+      text-decoration: none; // Remove default underline
+      transition: color 0.3s ease, text-decoration 0.3s ease;
+
+      &:hover {
+        color: darken($primary-color, 10%); // Darken on hover
+        text-decoration: underline; // Underline on hover for feedback
+      }
+    }
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    padding: calc($spacing-unit * 0.75); // Slightly less padding on smaller screens
+    p {
+      font-size: 0.9rem; // Smaller text on mobile
+    }
+  }
+}
