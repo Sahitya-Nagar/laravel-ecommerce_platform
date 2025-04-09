@@ -429,3 +429,112 @@ $background-light: #f9f9f9;
     50% { transform: scale(1.1); opacity: 1; }
     100% { transform: scale(1); opacity: 0.7; }
 }
+
+//For Reviews 
+
+.reviews-container {
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.review-form {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+
+    h4 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 100px;
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        
+        &:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0,123,255,0.3);
+        }
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 4px;
+        color: #fff;
+        
+        &:hover {
+            background-color: #0056b3;
+        }
+
+        &:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    }
+}
+
+.review-item {
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 15px;
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+
+        strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .review-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    }
+
+    .review-comment {
+        margin: 0;
+        color: #444;
+        line-height: 1.5;
+    }
+}
+
+.nav-tabs {
+    border-bottom: 2px solid #eee;
+
+    .nav-link {
+        color: #666;
+        padding: 10px 20px;
+
+        &.active {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+        }
+
+        &:hover {
+            color: #0056b3;
+        }
+    }
+}

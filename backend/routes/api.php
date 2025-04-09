@@ -12,6 +12,7 @@ use App\Http\Controllers\front\CartController;
 use App\Http\Controllers\front\ProductController as FrontProductController;
 use App\Http\Controllers\front\ShippingController as FrontShippingController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ReviewController;
 use App\Models\Product;
 use App\Models\TempImage;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ Route::post('register',[AccountController::class,'register']);
 Route::post('login',[AccountController::class,'authenticate']);
 Route::get('login',[AccountController::class,'show']);
 Route::get('get-shipping-front', [FrontShippingController::class, 'getShipping']);
+Route::get('reviews/{productId}', [ReviewController::class, 'index'])->name('reviews.index');
 
 Route::group(['middleware' => ['auth:sanctum','checkUserRole']],function(){
     Route::post('save-order',[OrderController::class,'saveOrder']);
@@ -38,6 +40,7 @@ Route::group(['middleware' => ['auth:sanctum','checkUserRole']],function(){
     Route::post('password/{id}',[AccountController::class,'changePassword']);
     Route::post('update-profile',[AccountController::class,'updateProfile']);
     Route::get('get-account-detail',[AccountController::class,'getAccountdetails']);
+    Route::post('reviews', [ReviewController::class, 'store'])->name('reviews.store');
 });
 
 // Route::get('/user', function (Request $request) {
