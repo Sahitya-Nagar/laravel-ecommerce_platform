@@ -140,7 +140,7 @@ const Product = () => {
 
         setSubmitting(true);
         try {
-            const currentToken = userToken(); // Safe to call here since isAuthenticated is true
+            const currentToken = userToken();
             console.log('apiUrl:', apiUrl, 'Type:', typeof apiUrl);
             console.log('userToken in submit:', currentToken, 'Type:', typeof currentToken);
             const url = `${apiUrl}/reviews`;
@@ -190,9 +190,9 @@ const Product = () => {
         fetchReviews();
     }, [params.id]);
 
-    // Determine Swiper loop and slidesPerView based on productImages length
+    
     const hasEnoughImages = productImages.length >= 6;
-    const slidesPerViewThumbs = Math.min(productImages.length, 6); // Adjust dynamically
+    const slidesPerViewThumbs = Math.min(productImages.length, 6);
 
     if (isLoading) {
         return <LoadingPage />;
