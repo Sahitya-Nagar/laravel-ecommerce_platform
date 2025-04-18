@@ -1,27 +1,3 @@
-// import React from 'react';
-
-// import LatestProducts from './common/LatestProducts';
-// import FeaturedProducts from './common/FeaturedProducts';
-// import Hero from './common/Hero';
-// import Layout from './common/Layout';
-// import Testimonials from './Testimonials';
-
-
-// const Home = () => {
-//   return (
-//    <>
-//       <Layout>
-//           <Hero/>
-//           <LatestProducts/>
-//           <FeaturedProducts/>     
-//           <Testimonials/>  
-//       </Layout>
-//    </>
-//   )
-// }
-
-// export default Home
-
 import React, { useEffect, useState } from 'react';
 import { apiUrl } from './common/http'; // Adjust path as needed
 import Layout from './common/Layout';
