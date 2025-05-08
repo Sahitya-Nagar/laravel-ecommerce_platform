@@ -12,6 +12,7 @@ use App\Http\Controllers\front\CartController;
 use App\Http\Controllers\front\ProductController as FrontProductController;
 use App\Http\Controllers\front\ShippingController as FrontShippingController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReviewController;
 use App\Models\Product;
 use App\Models\TempImage;
@@ -30,6 +31,7 @@ Route::post('login',[AccountController::class,'authenticate']);
 Route::get('login',[AccountController::class,'show']);
 Route::get('get-shipping-front', [FrontShippingController::class, 'getShipping']);
 Route::get('reviews/{productId}', [ReviewController::class, 'index'])->name('reviews.index');
+Route::post('create-payment-intent', [PaymentController::class, 'createPaymentIntent']);
 
 Route::group(['middleware' => ['auth:sanctum','checkUserRole']],function(){
     Route::post('save-order',[OrderController::class,'saveOrder']);

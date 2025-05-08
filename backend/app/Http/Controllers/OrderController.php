@@ -7,14 +7,79 @@ use App\Models\OrderItem;
 use App\Models\Shipping;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
 
 class OrderController extends Controller
 {
     public function saveOrder(Request $request)
     {
-        if (!empty($request->cart))
-        {
-             //Save order in db
+        // Validate request data
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string',
+            'email' => 'required|email',
+            'address' => 'required|string',
+            'city' => 'required|string',
+            'state' => 'required|string',
+            'zip' => 'required|string',
+            'mobile' => 'required|string',
+            'subtotal' => 'required|numeric',
+            'shipping' => 'required|numeric',
+            'grand_total' => 'required|numeric',
+            'discount' => 'nullable|numeric',
+            'payment_status' => 'required|string|in:paid,not paid',
+            'status' => 'required|string|in:pending,shipped,delivered,cancelled',
+            'cart' => 'required|array',
+            'payment_method' => 'required|string|in:cod,stripe',
+            'payment_intent_id' => 'required_if:payment_method,stripe|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        if (!empty($request->cart)) {
+            // Handle Stripe payment if payment method is 'stripe'
+            if ($request->payment_method === 'stripe') {
+                try {
+                    // Set Stripe API key
+                    Stripe::setApiKey(env('STRIPE_SECRET'));
+
+                    // Retrieve the PaymentIntent
+                    $paymentIntent = PaymentIntent::retrieve($request->payment_intent_id);
+
+                    // Check if the payment was successful
+                    if ($paymentIntent->status !== 'succeeded') {
+                        return response()->json([
+                            'status' => 400,
+                            'message' => 'Payment failed or is not completed',
+                        ], 400);
+                    }
+
+                    // Ensure the amount matches to prevent tampering
+                    if ($paymentIntent->amount !== $request->grand_total * 100) {
+                        return response()->json([
+                            'status' => 400,
+                            'message' => 'Payment amount does not match order total',
+                        ], 400);
+                    }
+
+                    // Set payment status to 'paid' for successful Stripe payment
+                    $request->merge(['payment_status' => 'paid']);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'status' => 500,
+                        'message' => 'Error verifying payment',
+                        'error' => $e->getMessage(),
+                    ], 500);
+                }
+            }
+
+            // Save order in db
             $order = new Order();
             $order->name = $request->name;
             $order->email = $request->email;
@@ -26,46 +91,43 @@ class OrderController extends Controller
             $order->subtotal = $request->subtotal;
             $order->shipping = $request->shipping;
             $order->grand_total = $request->grand_total;
-            $order->discount = $request->discount;
+            $order->discount = $request->discount ?? 0;
             $order->payment_status = $request->payment_status;
             $order->status = $request->status;
             $order->user_id = $request->user()->id;
+            $order->payment_method = $request->payment_method;
+            $order->payment_intent_id = $request->payment_method === 'stripe' ? $request->payment_intent_id : null;
             $order->save();
 
-
-            //Save order items
-            foreach ($request->cart as $item)
-            {
+            // Save order items
+            foreach ($request->cart as $item) {
                 $orderItem = new OrderItem();
                 $orderItem->order_id = $order->id;
                 $orderItem->price = $item['qty'] * $item['price'];
                 $orderItem->unit_price = $item['price'];
                 $orderItem->qty = $item['qty'];
                 $orderItem->product_id = $item['product_id'];
-                $orderItem->size = $item['size'];
+                $orderItem->size = $item['size'] ?? null;
                 $orderItem->name = $item['title'];
                 $orderItem->save();
             }
 
             return response()->json([
                 'status' => 201,
-                'id' =>  $order->id,    
+                'id' => $order->id,
                 'message' => "Order is Successfully placed",
-            ],201);
-        }
-        
-        else{
+            ], 201);
+        } else {
             return response()->json([
                 'status' => 400,
                 'message' => "Your Cart is Empty",
-            ],400);
+            ], 400);
         }
     }
 
     public function show()
     {
-        $details = Order::orderBy('created_at','DESC')
-                        ->get();
+        $details = Order::orderBy('created_at', 'DESC')->get();
 
         return response()->json([
             'status' => 200,
@@ -76,8 +138,8 @@ class OrderController extends Controller
     public function confirm($id)
     {
         $details = Order::where('id', $id)
-                ->with('items')
-                ->first();
+            ->with('items')
+            ->first();
 
         if (!$details) {
             return response()->json([
@@ -94,7 +156,6 @@ class OrderController extends Controller
 
     public function view($order_id)
     {
-        // Fetch order details
         $order = Order::where('id', $order_id)->first();
 
         if (!$order) {
@@ -104,9 +165,8 @@ class OrderController extends Controller
             ], 404);
         }
 
-        // Fetch order items for the given order_id
         $orderItems = OrderItem::where('order_id', $order_id)->get();
-                                
+
         if ($orderItems->isEmpty()) {
             return response()->json([
                 'status' => 404,
@@ -116,17 +176,15 @@ class OrderController extends Controller
 
         return response()->json([
             'status' => 200,
-            'order' => $order, 
+            'order' => $order,
             'items' => $orderItems
         ]);
     }
 
-    //Testing Api for the order items individual
     public function detail($order_id)
     {
-        // Fetch order items for the given order_id
-        $orderItems = Order::with('items','items.product')->find($order_id);
-                                
+        $orderItems = Order::with('items', 'items.product')->find($order_id);
+
         if ($orderItems == null) {
             return response()->json([
                 'status' => 404,
@@ -150,10 +208,8 @@ class OrderController extends Controller
         ]);
     }
 
-    //This method is to display order for an particular user
     public function order_details($user_id)
     {
-        // Fetch orders belonging to the user
         $orders = Order::where('user_id', $user_id)->get();
 
         if ($orders->isEmpty()) {
@@ -163,7 +219,6 @@ class OrderController extends Controller
             ], 404);
         }
 
-        // Fetch order items based on the user's order IDs
         $orderIds = $orders->pluck('id');
         $orderItems = OrderItem::whereIn('order_id', $orderIds)->get();
 
@@ -174,7 +229,6 @@ class OrderController extends Controller
             ], 404);
         }
 
-        // Combine orders and their items for a detailed response
         $responseData = $orders->map(function ($order) use ($orderItems) {
             return [
                 'order_id' => $order->id,
@@ -191,6 +245,8 @@ class OrderController extends Controller
                 'discount' => $order->discount,
                 'payment_status' => $order->payment_status,
                 'status' => $order->status,
+                'payment_method' => $order->payment_method,
+                'payment_intent_id' => $order->payment_intent_id,
                 'created_at' => $order->created_at,
                 'items' => $orderItems->where('order_id', $order->id)->values()
             ];
@@ -236,7 +292,6 @@ class OrderController extends Controller
                 'message' => 'Order status updated successfully',
                 'data' => $order,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 500,
@@ -246,4 +301,3 @@ class OrderController extends Controller
         }
     }
 }
-    

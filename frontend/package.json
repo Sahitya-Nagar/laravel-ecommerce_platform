@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "@stripe/react-stripe-js": "^3.7.0",
+    "@stripe/stripe-js": "^7.3.0",
     "@swiper/core": "^0.0.21",
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",

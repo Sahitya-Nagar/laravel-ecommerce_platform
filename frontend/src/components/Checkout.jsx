@@ -5,6 +5,7 @@ import { CartContext } from './context/Cart';
 import { toast } from 'react-toastify';
 import { apiUrl, userToken } from './common/http';
 import { useForm } from 'react-hook-form';
+import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 const Checkout = () => {
     const { cartData, subTotal, grandTotal, shipping } = useContext(CartContext);
@@ -14,6 +15,11 @@ const Checkout = () => {
     const [cities, setCities] = useState([]);
     const [selectedState, setSelectedState] = useState('');
     const [loadingCities, setLoadingCities] = useState(false);
+    const [paymentError, setPaymentError] = useState(null);
+    const [paymentLoading, setPaymentLoading] = useState(false);
+
+    const stripe = useStripe();
+    const elements = useElements();
 
     const {
         register,
@@ -35,12 +41,10 @@ const Checkout = () => {
                 });
                 const result = await res.json();
                 if (result.status === 200 && result.data) {
-                    // Set the selected state to fetch cities
                     if (result.data.state) {
                         setSelectedState(result.data.state);
                         fetchCitiesByState(result.data.state);
                     }
-                    
                     return {
                         name: result.data.name,
                         email: result.data.email,
@@ -59,19 +63,16 @@ const Checkout = () => {
         },
     });
 
-    // Watch for state changes to fetch cities
     const watchedState = watch('state');
-    
+
     useEffect(() => {
         if (watchedState && watchedState !== selectedState) {
             setSelectedState(watchedState);
             fetchCitiesByState(watchedState);
-            // Clear city selection when state changes
             setValue('city', '');
         }
-    }, [watchedState]);
+    }, [watchedState, setValue, selectedState]);
 
-    // Fetch Indian states from public API
     const fetchStates = async () => {
         try {
             const response = await fetch('https://countriesnow.space/api/v0.1/countries/states', {
@@ -92,7 +93,6 @@ const Checkout = () => {
         }
     };
 
-    // Fetch cities by state from public API
     const fetchCitiesByState = async (stateName) => {
         setLoadingCities(true);
         try {
@@ -114,25 +114,23 @@ const Checkout = () => {
         } catch (error) {
             setLoadingCities(false);
             console.error("Error fetching cities:", error);
-            // Fallback in case the API fails for some specific states
             setCities([]);
         }
     };
 
-    // Load states when component mounts
     useEffect(() => {
         fetchStates();
     }, []);
 
     const handlePaymentMethod = (e) => {
         setPaymentMethod(e.target.value);
+        setPaymentError(null);
     };
 
-    // Function to update user details
     const updateUserDetails = async (formData) => {
         try {
             const res = await fetch(`${apiUrl}/update-profile`, {
-                method: 'POST', 
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -159,8 +157,7 @@ const Checkout = () => {
         }
     };
 
-    // Function to save the order
-    const saveOrder = async (formData, paymentStatus) => {
+    const saveOrder = async (formData, paymentStatus, paymentIntentId = null) => {
         const newFormData = {
             ...formData,
             grand_total: grandTotal(),
@@ -170,6 +167,8 @@ const Checkout = () => {
             payment_status: paymentStatus,
             status: 'pending',
             cart: cartData,
+            payment_method: paymentMethod,
+            payment_intent_id: paymentIntentId,
         };
 
         try {
@@ -196,18 +195,94 @@ const Checkout = () => {
         }
     };
 
-    // Process the order and update user details
     const processOrder = async (data) => {
         console.log('Form Data:', data);
-
-        // Update user details first
         await updateUserDetails(data);
 
-        // Then save the order
         if (paymentMethod === 'cod') {
             await saveOrder(data, 'not paid');
+        } else if (paymentMethod === 'stripe') {
+            if (!stripe || !elements) {
+                toast.error('Stripe.js has not loaded yet.');
+                return;
+            }
+
+            setPaymentLoading(true);
+            setPaymentError(null);
+
+            try {
+                // Create PaymentIntent on the backend
+                const response = await fetch(`${apiUrl}/create-payment-intent`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${userToken()}`,
+                    },
+                    body: JSON.stringify({
+                        amount: grandTotal(), // Amount in INR
+                    }),
+                });
+                const result = await response.json();
+
+                if (result.status !== 200) {
+                    throw new Error(result.error || 'Failed to create payment intent');
+                }
+
+                const { clientSecret } = result;
+
+                // Confirm the payment with Stripe
+                const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: {
+                        card: elements.getElement(CardElement),
+                        billing_details: {
+                            name: data.name,
+                            email: data.email,
+                            address: {
+                                city: data.city,
+                                state: data.state,
+                                postal_code: data.zip,
+                                line1: data.address,
+                                country: 'IN',
+                            },
+                        },
+                    },
+                });
+
+                if (error) {
+                    setPaymentError(error.message);
+                    toast.error(error.message);
+                    setPaymentLoading(false);
+                    return;
+                }
+
+                if (paymentIntent.status === 'succeeded') {
+                    await saveOrder(data, 'paid', paymentIntent.id);
+                } else {
+                    toast.error('Payment failed');
+                    setPaymentLoading(false);
+                }
+            } catch (error) {
+                setPaymentError(error.message);
+                toast.error(error.message);
+                setPaymentLoading(false);
+            }
         }
-        // Add logic for other payment methods (e.g., Stripe) if needed
+    };
+
+    const cardElementOptions = {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#32325d',
+                '::placeholder': {
+                    color: '#aab7c4',
+                },
+            },
+            invalid: {
+                color: '#fa755a',
+            },
+        },
     };
 
     return (
@@ -388,7 +463,7 @@ const Checkout = () => {
                             </h3>
                             <table className="table">
                                 <tbody>
-                                    {cartData &&
+                                    {cartData && cartData.length > 0 ? (
                                         cartData.map((item) => (
                                             <tr key={`cart-${item.id}`}>
                                                 <td width={100}>
@@ -407,7 +482,12 @@ const Checkout = () => {
                                                     </div>
                                                 </td>
                                             </tr>
-                                        ))}
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={2}>Your cart is empty</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
 
@@ -440,7 +520,7 @@ const Checkout = () => {
                                         value="cod"
                                         onChange={handlePaymentMethod}
                                     />
-                                    <label className="form-label ps-2">COD</label>
+                                    <label className="form-label ps-2">Cash on Delivery</label>
 
                                     <input
                                         type="radio"
@@ -449,12 +529,28 @@ const Checkout = () => {
                                         className="ms-3"
                                         onChange={handlePaymentMethod}
                                     />
-                                    <label className="form-label ps-2">Stripe</label>
+                                    <label className="form-label ps-2">Credit/Debit Card</label>
                                 </div>
 
+                                {paymentMethod === 'stripe' && (
+                                    <div className="mt-3">
+                                        <label className="form-label">Card Details</label>
+                                        <div className="border p-2">
+                                            <CardElement options={cardElementOptions} />
+                                        </div>
+                                        {paymentError && (
+                                            <p className="text-danger mt-2">{paymentError}</p>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="d-flex py-3">
-                                    <button type="submit" className="btn btn-primary">
-                                        Place Order
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary"
+                                        disabled={paymentLoading || !cartData || cartData.length === 0}
+                                    >
+                                        {paymentLoading ? 'Processing...' : 'Place Order'}
                                     </button>
                                 </div>
                             </div>
