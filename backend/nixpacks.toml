@@ -7,7 +7,7 @@ nixPkgs = [
 [phases.install]
 cmds = [
     'composer install --no-dev',
-    'echo "APP_NAME=Laravel\nAPP_ENV=production\nAPP_DEBUG=false\nAPP_URL=https://laravel-ecommerceplatform-production.up.railway.app\nLOG_CHANNEL=stack\nBROADCAST_DRIVER=log\nCACHE_DRIVER=file\nFILESYSTEM_DISK=local\nQUEUE_CONNECTION=sync\nSESSION_DRIVER=file\nSESSION_LIFETIME=120\nDB_CONNECTION=mysql" > .env',
+    'echo "APP_NAME=Laravel\nAPP_ENV=production\nAPP_DEBUG=false\nAPP_URL=https://laravel-ecommerceplatform-production.up.railway.app\nLOG_CHANNEL=stack\nBROADCAST_DRIVER=log\nCACHE_DRIVER=file\nFILESYSTEM_DISK=local\nQUEUE_CONNECTION=sync\nSESSION_DRIVER=file\nSESSION_LIFETIME=120\nDB_CONNECTION=mysql\nDB_HOST=${MYSQLHOST}\nDB_PORT=${MYSQLPORT}\nDB_DATABASE=${MYSQLDATABASE}\nDB_USERNAME=${MYSQLUSER}\nDB_PASSWORD=${MYSQLPASSWORD}" > .env',
     'php artisan key:generate --force',
     'php artisan config:cache',
     'php artisan route:cache'
