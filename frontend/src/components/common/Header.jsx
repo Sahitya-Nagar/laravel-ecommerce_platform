@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import Logo from '../../assets/images/logoFinal.jpg';
 import { apiUrl } from './http';
 import { CartContext } from '../context/Cart';
-import UserIcon from '../Usericon';
+import UserIcon from '../UserIcon';
 
 const Header = () => {
   const [categories, setCategories] = useState([]);

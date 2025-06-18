@@ -1,14 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
   "routes": [
     {
       "src": "/assets/(.*)",
@@ -28,7 +22,7 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://your-railway-app-url.up.railway.app/api",
+    "VITE_API_URL": "https://laravel-ecommerceplatform-production.up.railway.app/api",
     "VITE_BASE_URL": "https://ecommerce-store-a4le928be-sahitya-nagars-projects.vercel.app"
   }
 } 

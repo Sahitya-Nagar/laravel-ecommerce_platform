@@ -1,4 +1,4 @@
-export const apiUrl = 'http://localhost:8000/api'
+export const apiUrl = import.meta.env.VITE_API_URL || 'https://laravel-ecommerceplatform-production.up.railway.app/api'
 
 export const adminToken = () => {
     const data = JSON.parse(localStorage.getItem('adminInfo'))
