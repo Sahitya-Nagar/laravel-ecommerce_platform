@@ -24,5 +24,8 @@
   "env": {
     "VITE_API_URL": "https://laravel-ecommerceplatform-production.up.railway.app/api",
     "VITE_BASE_URL": "https://ecommerce-store-a4le928be-sahitya-nagars-projects.vercel.app"
-  }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 } 
