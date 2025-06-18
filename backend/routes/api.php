@@ -83,3 +83,7 @@ Route::group(['middleware' => ['auth:sanctum','checkAdminRole']],function(){
     // Route::delete('/cart/delete/{id}', [CartController::class, 'deleteCartItem']);
 
 });
+
+Route::get('/health', function () {
+    return response()->json(['status' => 'healthy'], 200);
+});
