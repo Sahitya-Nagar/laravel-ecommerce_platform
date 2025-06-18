@@ -1,12 +1,22 @@
 [phases.setup]
 nixPkgs = [
     'php82',
-    'php82Packages.composer'
+    'php82Packages.composer',
+    'nodejs_20',
+    'npm'
 ]
 
 [phases.install]
 cmds = [
-    'composer install --no-dev'
+    'composer install --no-dev',
+    'php artisan key:generate --force',
+    'php artisan config:cache',
+    'php artisan route:cache'
+]
+
+[phases.build]
+cmds = [
+    'php artisan storage:link'
 ]
 
 [start]
